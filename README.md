@@ -3,6 +3,26 @@ Packages sketch for ROS Melodic on Slackware 14.2
 
 http://barelywalking.com/?p=483
 
+Before using - read all the warnings and disclaimers, this is quite highly experimental and risky.
+
+# Usage
+
+In short?
+
+I assume you have a working sbotools (you have done at least once "sbosnap fetch")
+Packages qt5 and PyQt5 will take a LOT of time to compile, consider installing them first on your own (for example from AlienBob repository)
+
+```
+git clone https://github.com/adamlukomski/ros_melodic_slackware
+sboconfig -o ros_melodic_slackware/
+sboinstall ros-melodic-slackware
+```
+
+One of the possible queques: (I already had qt5)
+docutils setuptools-scm python-dateutil python-empy python-catkin_pkg PyYAML python-rosdistro python-rospkg python-rosdep python-vcstools python-wstool python-rosinstall python-rosinstall_generator libxkbcommon libwacom ninja meson python-evdev pyudev libinput python2-sip enum34 numpy3 defusedxml netifaces PyOpenGL pycrypto python-gnupg pydot apache-log4cxx ros-melodic-desktop
+
+
+
 # Loose notes
 
 This script will compile a ROS Melodic with some slight patches.
