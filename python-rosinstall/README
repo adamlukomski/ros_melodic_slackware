@@ -1,0 +1,12 @@
+python-rosinstall
+
+Command-line tools for maintaining a workspace of projects from
+multiple version-control systems, tailored for the ROS
+(Robot operating system) community.
+
+Using rosinstall you can update several folders using a variety
+of SCMs (SVN, Mercurial, git, Bazaar) with just one command.
+The rosinstall package provides a Python API for interacting with
+a source code workspace as well as a group of command line tools.
+Rosinstall leverages the vcstools package for source control
+and stores its state in .rosinstall files.

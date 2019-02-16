@@ -1,0 +1,4 @@
+python-rosinstall_generator
+
+The rosinstall_generator generates rosinstall files containing information
+about repositories with ROS packages/stacks.

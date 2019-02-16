@@ -1,0 +1,23 @@
+ros-melodic-desktop
+
+The Robot Operating System (ROS) is a flexible framework
+for writing robot software. It is a collection of tools,
+libraries, and conventions that aim to simplify the task
+of creating complex and robust robot behavior across
+a wide variety of robotic platforms.
+
+This is a script that will download a specific version
+of the ROS Melodic Desktop framework, apply Slackware-specific
+patches and create a single package.
+
+Please note there is still a trick used that links lib to lib64
+on 64-bit systems for compatibility (patch in progress). This
+is only required for plugin system as the paths are
+hard-coded in plugins.xml.
+
+By default omits wstool and downloads everything from the
+.rosinstall file using wget. This is done because of a hiccup
+in wstool and the naming of directories inside .tar.gz.
+To get back to wstool please use:
+
+USE_WGET=no ./ros-melodic-desktop.SlackBuild

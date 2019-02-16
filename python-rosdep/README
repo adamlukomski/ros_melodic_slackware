@@ -1,0 +1,9 @@
+python-rosdep
+
+rosdep is a command-line tool for installing system dependencies.
+For end-users, rosdep helps you install system dependencies for
+software that you are building from source. For developers, rosdep
+simplifies the problem of installing system dependencies on different
+platforms.
+
+rosdep support on Slackware with sbotools is experimental.

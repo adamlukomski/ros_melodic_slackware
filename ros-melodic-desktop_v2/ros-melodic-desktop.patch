@@ -1,0 +1,579 @@
+diff -ru src_unmodded/catkin/cmake/all.cmake src/catkin/cmake/all.cmake
+--- src_unmodded/catkin/cmake/all.cmake	2018-06-06 18:18:48.000000000 +0200
++++ src/catkin/cmake/all.cmake	2018-07-20 23:49:00.531904569 +0200
+@@ -169,8 +169,8 @@
+ set(CATKIN_GLOBAL_BIN_DESTINATION bin)
+ set(CATKIN_GLOBAL_ETC_DESTINATION etc)
+ set(CATKIN_GLOBAL_INCLUDE_DESTINATION include)
+-set(CATKIN_GLOBAL_LIB_DESTINATION lib)
+-set(CATKIN_GLOBAL_LIBEXEC_DESTINATION lib)
++set(CATKIN_GLOBAL_LIB_DESTINATION lib${LIB_SUFFIX})
++set(CATKIN_GLOBAL_LIBEXEC_DESTINATION lib${LIB_SUFFIX})
+ set(CATKIN_GLOBAL_PYTHON_DESTINATION ${PYTHON_INSTALL_DIR})
+ set(CATKIN_GLOBAL_SHARE_DESTINATION share)
+ 
+diff -ru src_unmodded/catkin/cmake/catkin_package.cmake src/catkin/cmake/catkin_package.cmake
+--- src_unmodded/catkin/cmake/catkin_package.cmake	2018-06-06 18:18:48.000000000 +0200
++++ src/catkin/cmake/catkin_package.cmake	2018-07-21 00:18:13.639852419 +0200
+@@ -242,7 +242,7 @@
+   # get library paths from all workspaces
+   set(lib_paths "")
+   foreach(workspace ${CATKIN_WORKSPACES})
+-    list_append_unique(lib_paths ${workspace}/lib)
++    list_append_unique(lib_paths ${workspace}/${CATKIN_PACKAGE_LIB_DESTINATION})
+   endforeach()
+ 
+   # merge explicitly listed libraries and libraries from non-catkin but find_package()-ed packages
+@@ -311,7 +311,7 @@
+ 
+   # prepend library path of this workspace
+   set(PKG_CONFIG_LIB_PATHS ${lib_paths})
+-  list(INSERT PKG_CONFIG_LIB_PATHS 0 ${PROJECT_SPACE_DIR}/lib)
++  list(INSERT PKG_CONFIG_LIB_PATHS 0 ${PROJECT_SPACE_DIR}/${CATKIN_PACKAGE_LIB_DESTINATION})
+   set(PKG_CMAKE_DIR ${PROJECT_SPACE_DIR}/share/${PROJECT_NAME}/cmake)
+   if("${PROJECT_NAME}" STREQUAL "catkin")
+     set(PKG_CMAKE_DIR "${catkin_EXTRAS_DIR}")
+@@ -319,12 +319,12 @@
+ 
+   if(NOT PROJECT_SKIP_PKG_CONFIG_GENERATION)
+     # ensure that output folder exists
+-    file(MAKE_DIRECTORY ${CATKIN_DEVEL_PREFIX}/lib/pkgconfig)
++    file(MAKE_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/pkgconfig)
+     # generate devel space pc for project
+     em_expand(${catkin_EXTRAS_DIR}/templates/pkg.context.pc.in
+       ${CMAKE_CURRENT_BINARY_DIR}/catkin_generated/pkg.develspace.context.pc.py
+       ${catkin_EXTRAS_DIR}/em/pkg.pc.em
+-      ${CATKIN_DEVEL_PREFIX}/lib/pkgconfig/${PROJECT_NAME}.pc)
++      ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/pkgconfig/${PROJECT_NAME}.pc)
+   endif()
+ 
+   # generate devel space cfg-extras for project
+@@ -432,7 +432,7 @@
+ 
+   # prepend library path of this workspace
+   set(PKG_CONFIG_LIB_PATHS ${lib_paths})
+-  list(INSERT PKG_CONFIG_LIB_PATHS 0 ${PROJECT_SPACE_DIR}/lib)
++  list(INSERT PKG_CONFIG_LIB_PATHS 0 ${PROJECT_SPACE_DIR}/${CATKIN_PACKAGE_LIB_DESTINATION})
+   # package cmake dir is the folder where the generated pkgConfig.cmake is located
+   set(PKG_CMAKE_DIR "\${${PROJECT_NAME}_DIR}")
+ 
+@@ -445,7 +445,7 @@
+       ${catkin_EXTRAS_DIR}/em/pkg.pc.em
+       ${CMAKE_CURRENT_BINARY_DIR}/catkin_generated/installspace/${PROJECT_NAME}.pc)
+     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/catkin_generated/installspace/${PROJECT_NAME}.pc
+-      DESTINATION lib/pkgconfig
++      DESTINATION lib${LIB_SUFFIX}/pkgconfig
+     )
+   endif()
+ 
+diff -ru src_unmodded/catkin/cmake/catkin_workspace.cmake src/catkin/cmake/catkin_workspace.cmake
+--- src_unmodded/catkin/cmake/catkin_workspace.cmake	2018-06-06 18:18:48.000000000 +0200
++++ src/catkin/cmake/catkin_workspace.cmake	2018-07-21 00:18:26.893852025 +0200
+@@ -13,8 +13,8 @@
+   debug_message(10 "catkin_workspace() called in file '${CMAKE_CURRENT_LIST_FILE}'")
+ 
+   # set global output directories for artifacts and create them if necessary
+-  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/lib)
+-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/lib)
++  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION})
++  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION})
+   if(NOT IS_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+     file(MAKE_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+   endif()
+diff -ru src_unmodded/catkin/cmake/em/pkg.pc.em src/catkin/cmake/em/pkg.pc.em
+--- src_unmodded/catkin/cmake/em/pkg.pc.em	2018-06-06 18:18:48.000000000 +0200
++++ src/catkin/cmake/em/pkg.pc.em	2018-07-21 00:20:29.535848376 +0200
+@@ -4,5 +4,5 @@
+ Description: Description of @PROJECT_NAME
+ Version: @PROJECT_VERSION
+ Cflags: @(' '.join(['-I%s' % include for include in PROJECT_PKG_CONFIG_INCLUDE_DIRS]))
+-Libs: -L@PROJECT_SPACE_DIR/lib @(' '.join(PKG_CONFIG_LIBRARIES_WITH_PREFIX))
++Libs: -L@PROJECT_SPACE_DIR/${CATKIN_PACKAGE_LIB_DESTINATION} @(' '.join(PKG_CONFIG_LIBRARIES_WITH_PREFIX))
+ Requires: @(PROJECT_CATKIN_DEPENDS)
+diff -ru src_unmodded/catkin/cmake/python.cmake src/catkin/cmake/python.cmake
+--- src_unmodded/catkin/cmake/python.cmake	2018-06-06 18:18:48.000000000 +0200
++++ src/catkin/cmake/python.cmake	2018-07-20 23:49:00.533904569 +0200
+@@ -29,10 +29,10 @@
+ endif()
+ 
+ if(NOT WIN32)
+-  set(PYTHON_INSTALL_DIR lib/python${_PYTHON_PATH_VERSION_SUFFIX}/${PYTHON_PACKAGES_DIR}
++  set(PYTHON_INSTALL_DIR lib${LIB_SUFFIX}/python${_PYTHON_PATH_VERSION_SUFFIX}/${PYTHON_PACKAGES_DIR}
+     CACHE INTERNAL "This needs to be in PYTHONPATH when 'setup.py install' is called.  And it needs to match.  But setuptools won't tell us where it will install things.")
+ else()
+   # Windows setuptools installs to lib/site-packages not lib/python2.7/site-packages
+-  set(PYTHON_INSTALL_DIR lib/${PYTHON_PACKAGES_DIR}
++  set(PYTHON_INSTALL_DIR lib${LIB_SUFFIX}/${PYTHON_PACKAGES_DIR}
+     CACHE INTERNAL "This needs to be in PYTHONPATH when 'setup.py install' is called.  And it needs to match.  But setuptools won't tell us where it will install things.")
+ endif()
+Only in src/catkin/python/catkin: __init__.pyc
+Only in src/catkin/python/catkin: builder.pyc
+Only in src/catkin/python/catkin: cmake.pyc
+Only in src/catkin/python/catkin: environment_cache.pyc
+diff -ru src_unmodded/catkin/python/catkin/find_in_workspaces.py src/catkin/python/catkin/find_in_workspaces.py
+--- src_unmodded/catkin/python/catkin/find_in_workspaces.py	2018-06-06 18:18:48.000000000 +0200
++++ src/catkin/python/catkin/find_in_workspaces.py	2018-09-08 01:24:04.706148274 +0200
+@@ -46,7 +46,7 @@
+     :raises: ValueError
+     """
+     # define valid search folders
+-    valid_global_search_dirs = ['bin', 'etc', 'include', 'lib', 'share']
++    valid_global_search_dirs = ['bin', 'etc', 'include', 'lib', 'lib64', 'share']
+     valid_project_search_dirs = ['etc', 'include', 'libexec', 'share']
+ 
+     valid_search_dirs = (valid_global_search_dirs
+@@ -110,6 +110,7 @@
+     search_dirs = _get_valid_search_dirs(search_dirs, project)
+     if 'libexec' in search_dirs:
+         search_dirs.insert(search_dirs.index('libexec'), 'lib')
++        search_dirs.insert(search_dirs.index('libexec'), 'lib64')
+     if _workspaces is None:
+         _workspaces = get_workspaces()
+     if workspace_to_source_spaces is None:
+Only in src/catkin/python/catkin: find_in_workspaces.pyc
+Only in src/catkin/python/catkin: workspace.pyc
+diff -ru src_unmodded/class_loader/CMakeLists.txt src/class_loader/CMakeLists.txt
+--- src_unmodded/class_loader/CMakeLists.txt	2018-04-27 23:00:46.000000000 +0200
++++ src/class_loader/CMakeLists.txt	2018-07-20 23:49:00.534904569 +0200
+@@ -31,7 +31,7 @@
+   message("-- catkin not found")
+   set(Poco_DIR cmake)
+   find_package(Poco REQUIRED COMPONENTS Foundation)
+-  set(CATKIN_PACKAGE_LIB_DESTINATION lib)
++  set(CATKIN_PACKAGE_LIB_DESTINATION lib${LIB_SUFFIX})
+   set(CATKIN_GLOBAL_BIN_DESTINATION bin)
+   set(CATKIN_GLOBAL_BIN_DESTINATION bin)
+   set(CATKIN_PACKAGE_INCLUDE_DESTINATION include/class_loader)
+@@ -88,5 +88,5 @@
+   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/${TARGET_NAME}.pc.in
+     ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.pc @ONLY)
+ 
+-  install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION lib/pkgconfig)
++  install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION lib${LIB_SUFFIX}/pkgconfig)
+ endif()
+diff -ru src_unmodded/class_loader/src/class_loader.pc.in src/class_loader/src/class_loader.pc.in
+--- src_unmodded/class_loader/src/class_loader.pc.in	2018-04-27 23:00:46.000000000 +0200
++++ src/class_loader/src/class_loader.pc.in	2018-07-21 00:15:19.896857587 +0200
+@@ -1,6 +1,6 @@
+ prefix=@CMAKE_INSTALL_PREFIX@
+ exec_prefix=@CMAKE_INSTALL_PREFIX@
+-libdir=${prefix}/lib
++libdir=${prefix}/${CATKIN_PACKAGE_LIB_DESTINATION}
+ includedir=${prefix}/include
+ 
+ Name: @TARGET_NAME@
+diff -ru src_unmodded/common_tutorials/nodelet_tutorial_math/CMakeLists.txt src/common_tutorials/nodelet_tutorial_math/CMakeLists.txt
+--- src_unmodded/common_tutorials/nodelet_tutorial_math/CMakeLists.txt	2018-04-03 04:46:56.000000000 +0200
++++ src/common_tutorials/nodelet_tutorial_math/CMakeLists.txt	2018-07-21 00:50:51.749794170 +0200
+@@ -1,6 +1,8 @@
+ cmake_minimum_required(VERSION 2.8.3)
+ project(nodelet_tutorial_math)
+ 
++set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++0x")
++
+ find_package(catkin REQUIRED COMPONENTS nodelet roscpp std_msgs)
+ 
+ ## Setup include directories
+diff -ru src_unmodded/common_tutorials/pluginlib_tutorials/CMakeLists.txt src/common_tutorials/pluginlib_tutorials/CMakeLists.txt
+--- src_unmodded/common_tutorials/pluginlib_tutorials/CMakeLists.txt	2018-04-03 04:46:53.000000000 +0200
++++ src/common_tutorials/pluginlib_tutorials/CMakeLists.txt	2018-07-21 00:51:26.160793147 +0200
+@@ -1,6 +1,8 @@
+ cmake_minimum_required(VERSION 2.8.3)
+ project(pluginlib_tutorials)
+ 
++set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++0x")
++
+ ## Find catkin dependencies
+ find_package(catkin REQUIRED COMPONENTS pluginlib roscpp)
+ 
+diff -ru src_unmodded/diagnostics/diagnostic_aggregator/CMakeLists.txt src/diagnostics/diagnostic_aggregator/CMakeLists.txt
+--- src_unmodded/diagnostics/diagnostic_aggregator/CMakeLists.txt	2018-05-02 19:53:34.000000000 +0200
++++ src/diagnostics/diagnostic_aggregator/CMakeLists.txt	2018-07-21 00:54:58.838786820 +0200
+@@ -2,6 +2,8 @@
+ cmake_minimum_required(VERSION 2.8.3)
+ project(diagnostic_aggregator)
+ 
++set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++0x")
++
+ # Load catkin and all dependencies required for this package
+ find_package(catkin REQUIRED diagnostic_msgs pluginlib roscpp rospy xmlrpcpp bondcpp)
+ catkin_package(DEPENDS diagnostic_msgs pluginlib roscpp rospy xmlrpcpp bondcpp
+Only in src/dynamic_reconfigure/src/dynamic_reconfigure: parameter_generator_catkin.pyc
+diff -ru src_unmodded/filters/CMakeLists.txt src/filters/CMakeLists.txt
+--- src_unmodded/filters/CMakeLists.txt	2018-04-05 04:31:15.000000000 +0200
++++ src/filters/CMakeLists.txt	2018-07-21 00:56:35.932783932 +0200
+@@ -1,6 +1,8 @@
+ cmake_minimum_required(VERSION 2.8.3)
+ project(filters)
+ 
++set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++0x")
++
+ ##############################################################################
+ # Find dependencies
+ ##############################################################################
+diff -ru src_unmodded/geometry/eigen_conversions/CMakeLists.txt src/geometry/eigen_conversions/CMakeLists.txt
+--- src_unmodded/geometry/eigen_conversions/CMakeLists.txt	2018-05-03 05:17:46.000000000 +0200
++++ src/geometry/eigen_conversions/CMakeLists.txt	2018-07-21 00:40:06.991813350 +0200
+@@ -3,7 +3,11 @@
+ 
+ find_package(orocos_kdl REQUIRED)
+ find_package(catkin REQUIRED geometry_msgs std_msgs)
+-find_package(Eigen3 REQUIRED)
++#find_package(Eigen3 REQUIRED)
++find_package( PkgConfig )
++pkg_check_modules( EIGEN3 REQUIRED eigen3 )
++include_directories( ${EIGEN3_INCLUDE_DIRS} )
++
+ 
+ include_directories(SYSTEM ${EIGEN3_INCLUDE_DIRS})
+ include_directories(include ${catkin_INCLUDE_DIRS} ${orocos_kdl_INCLUDE_DIRS})
+diff -ru src_unmodded/geometry/tf_conversions/CMakeLists.txt src/geometry/tf_conversions/CMakeLists.txt
+--- src_unmodded/geometry/tf_conversions/CMakeLists.txt	2018-05-03 05:17:43.000000000 +0200
++++ src/geometry/tf_conversions/CMakeLists.txt	2018-07-21 00:39:58.947813590 +0200
+@@ -3,7 +3,10 @@
+ 
+ find_package(orocos_kdl REQUIRED)
+ find_package(catkin REQUIRED geometry_msgs kdl_conversions tf)
+-find_package(Eigen3 REQUIRED)
++#find_package(Eigen3 REQUIRED)
++find_package( PkgConfig )
++pkg_check_modules( EIGEN3 REQUIRED eigen3 )
++include_directories( ${EIGEN3_INCLUDE_DIRS} )
+ 
+ catkin_python_setup()
+ 
+diff -ru src_unmodded/geometry_tutorials/turtle_tf/CMakeLists.txt src/geometry_tutorials/turtle_tf/CMakeLists.txt
+--- src_unmodded/geometry_tutorials/turtle_tf/CMakeLists.txt	2018-04-05 04:14:32.000000000 +0200
++++ src/geometry_tutorials/turtle_tf/CMakeLists.txt	2018-07-21 01:25:11.077732911 +0200
+@@ -1,6 +1,8 @@
+ cmake_minimum_required(VERSION 2.8.3)
+ project(turtle_tf)
+ 
++set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++0x")
++
+ ## Find dependencies
+ find_package(catkin REQUIRED COMPONENTS geometry_msgs roscpp rospy std_msgs tf turtlesim)
+ 
+diff -ru src_unmodded/image_common/image_transport/CMakeLists.txt src/image_common/image_transport/CMakeLists.txt
+--- src_unmodded/image_common/image_transport/CMakeLists.txt	2018-03-26 23:42:15.000000000 +0200
++++ src/image_common/image_transport/CMakeLists.txt	2018-07-21 01:08:38.917762425 +0200
+@@ -1,6 +1,8 @@
+ cmake_minimum_required(VERSION 2.8.3)
+ project(image_transport)
+ 
++set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++0x")
++
+ find_package(catkin REQUIRED
+   COMPONENTS
+     message_filters
+diff -ru src_unmodded/interactive_markers/CMakeLists.txt src/interactive_markers/CMakeLists.txt
+--- src_unmodded/interactive_markers/CMakeLists.txt	2018-04-16 18:39:12.000000000 +0200
++++ src/interactive_markers/CMakeLists.txt	2018-07-21 01:18:09.115745463 +0200
+@@ -1,5 +1,8 @@
+ cmake_minimum_required(VERSION 2.8.3)
+ project(interactive_markers)
++
++set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++0x")
++
+ find_package(catkin REQUIRED 
+   rosconsole
+   roscpp
+diff -ru src_unmodded/laser_geometry/CMakeLists.txt src/laser_geometry/CMakeLists.txt
+--- src_unmodded/laser_geometry/CMakeLists.txt	2018-04-03 03:32:06.000000000 +0200
++++ src/laser_geometry/CMakeLists.txt	2018-07-21 01:23:13.651736404 +0200
+@@ -1,6 +1,8 @@
+ cmake_minimum_required(VERSION 2.8.3)
+ project(laser_geometry)
+ 
++set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++0x")
++
+ find_package(catkin REQUIRED
+     COMPONENTS
+         angles
+diff -ru src_unmodded/nodelet_core/nodelet/CMakeLists.txt src/nodelet_core/nodelet/CMakeLists.txt
+--- src_unmodded/nodelet_core/nodelet/CMakeLists.txt	2018-04-27 23:03:48.000000000 +0200
++++ src/nodelet_core/nodelet/CMakeLists.txt	2018-07-21 00:47:37.428799951 +0200
+@@ -1,6 +1,8 @@
+ cmake_minimum_required(VERSION 2.8.3)
+ project(nodelet)
+ 
++set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++0x")
++
+ ## Find catkin dependencies
+ find_package(catkin REQUIRED
+   bondcpp
+diff -ru src_unmodded/orocos_kinematics_dynamics/orocos_kdl/KDLConfig.cmake.in src/orocos_kinematics_dynamics/orocos_kdl/KDLConfig.cmake.in
+--- src_unmodded/orocos_kinematics_dynamics/orocos_kdl/KDLConfig.cmake.in	2018-03-21 22:40:00.000000000 +0100
++++ src/orocos_kinematics_dynamics/orocos_kdl/KDLConfig.cmake.in	2018-07-21 00:15:57.633856465 +0200
+@@ -14,4 +14,4 @@
+ set(orocos_kdl_LIBRARIES orocos-kdl)
+ 
+ # where the .pc pkgconfig files are installed
+-set(orocos_kdl_PKGCONFIG_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../lib/pkgconfig")
++set(orocos_kdl_PKGCONFIG_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../${CATKIN_PACKAGE_LIB_DESTINATION}/pkgconfig")
+diff -ru src_unmodded/orocos_kinematics_dynamics/orocos_kdl/manifest.xml src/orocos_kinematics_dynamics/orocos_kdl/manifest.xml
+--- src_unmodded/orocos_kinematics_dynamics/orocos_kdl/manifest.xml	2018-03-21 22:40:00.000000000 +0100
++++ src/orocos_kinematics_dynamics/orocos_kdl/manifest.xml	2018-07-21 00:16:24.042855679 +0200
+@@ -10,7 +10,7 @@
+ <review status="reviewed" notes=""/>
+ <url>http://www.orocos.org/kdl</url>
+ <export>
+-  <cpp cflags="-I${prefix}/install_dir/include `pkg-config --cflags eigen3`" lflags="-Wl,-rpath,${prefix}/install_dir/lib  -L${prefix}/install_dir/lib -lorocos-kdl"/>
++  <cpp cflags="-I${prefix}/install_dir/include `pkg-config --cflags eigen3`" lflags="-Wl,-rpath,${prefix}/install_dir/${CATKIN_PACKAGE_LIB_DESTINATION}  -L${prefix}/install_dir/${CATKIN_PACKAGE_LIB_DESTINATION} -lorocos-kdl"/>
+   <doxymaker external="http://www.orocos.org/kdl" />
+ </export>
+ 
+diff -ru src_unmodded/orocos_kinematics_dynamics/orocos_kdl/models/CMakeLists.txt src/orocos_kinematics_dynamics/orocos_kdl/models/CMakeLists.txt
+--- src_unmodded/orocos_kinematics_dynamics/orocos_kdl/models/CMakeLists.txt	2018-03-21 22:40:00.000000000 +0100
++++ src/orocos_kinematics_dynamics/orocos_kdl/models/CMakeLists.txt	2018-07-21 00:19:17.449850521 +0200
+@@ -8,7 +8,7 @@
+     SOVERSION "${KDL_VERSION_MAJOR}.${KDL_VERSION_MINOR}"
+     VERSION "${KDL_VERSION}"
+     COMPILE_FLAGS "${CMAKE_CXX_FLAGS_ADD} ${KDL_CFLAGS}"
+-    INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}"
++    INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}"
+     PUBLIC_HEADER models.hpp)
+   TARGET_LINK_LIBRARIES(orocos-kdl-models orocos-kdl)
+ 
+diff -ru src_unmodded/orocos_kinematics_dynamics/orocos_kdl/src/CMakeLists.txt src/orocos_kinematics_dynamics/orocos_kdl/src/CMakeLists.txt
+--- src_unmodded/orocos_kinematics_dynamics/orocos_kdl/src/CMakeLists.txt	2018-03-21 22:40:00.000000000 +0100
++++ src/orocos_kinematics_dynamics/orocos_kdl/src/CMakeLists.txt	2018-07-21 00:19:58.875849289 +0200
+@@ -85,9 +85,9 @@
+         #I assume that the directory is
+         # - install_dir/something for binaries
+         # - install_dir/lib for libraries
+-        LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
++        LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}" isSystemDir)
+         IF("${isSystemDir}" STREQUAL "-1")
+-            FILE(RELATIVE_PATH _rel_path "${CMAKE_INSTALL_PREFIX}/bin" "${CMAKE_INSTALL_PREFIX}/lib")
++            FILE(RELATIVE_PATH _rel_path "${CMAKE_INSTALL_PREFIX}/bin" "${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}")
+             IF (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+                 SET(CMAKE_INSTALL_RPATH "@loader_path/${_rel_path}")
+             ELSE()
+@@ -116,11 +116,11 @@
+ ENDIF()
+ IF(CMAKE_VERSION VERSION_LESS 2.8.12)
+     SET_TARGET_PROPERTIES( orocos-kdl PROPERTIES
+-      INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}")
++      INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}")
+ ELSE()
+     IF(NOT OROCOSKDL_ENABLE_RPATH)
+         SET_TARGET_PROPERTIES( orocos-kdl PROPERTIES
+-          INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}")
++          INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}")
+     ENDIF()
+ ENDIF()
+ #####end RPATH
+diff -ru src_unmodded/orocos_kinematics_dynamics/orocos_kdl/src/kdl.pc.in src/orocos_kinematics_dynamics/orocos_kdl/src/kdl.pc.in
+--- src_unmodded/orocos_kinematics_dynamics/orocos_kdl/src/kdl.pc.in	2018-03-21 22:40:00.000000000 +0100
++++ src/orocos_kinematics_dynamics/orocos_kdl/src/kdl.pc.in	2018-07-21 00:19:25.448850283 +0200
+@@ -1,5 +1,5 @@
+ prefix=@CMAKE_INSTALL_PREFIX@
+-libdir=${prefix}/lib
++libdir=${prefix}/${CATKIN_PACKAGE_LIB_DESTINATION}
+ includedir=${prefix}/include
+ 
+ Name: orocos-kdl
+diff -ru src_unmodded/orocos_kinematics_dynamics/python_orocos_kdl/manifest.xml src/orocos_kinematics_dynamics/python_orocos_kdl/manifest.xml
+--- src_unmodded/orocos_kinematics_dynamics/python_orocos_kdl/manifest.xml	2018-03-21 22:39:59.000000000 +0100
++++ src/orocos_kinematics_dynamics/python_orocos_kdl/manifest.xml	2018-07-21 00:15:41.795856936 +0200
+@@ -13,7 +13,7 @@
+   <rosdep name="python-sip"/>
+ 
+   <export>
+-    <python path="${prefix}/lib"  />
++    <python path="${prefix}/${CATKIN_PACKAGE_LIB_DESTINATION}"  />
+     <rosdoc config="rosdoc.yaml"/>
+   </export>
+ 
+diff -ru src_unmodded/python_qt_binding/cmake/sip_helper.cmake src/python_qt_binding/cmake/sip_helper.cmake
+--- src_unmodded/python_qt_binding/cmake/sip_helper.cmake	2018-01-30 21:08:56.000000000 +0100
++++ src/python_qt_binding/cmake/sip_helper.cmake	2018-07-21 00:16:37.370855283 +0200
+@@ -191,7 +191,7 @@
+         set(sip_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
+     endif()
+     if(NOT sip_LIBRARY_DIR)
+-        set(sip_LIBRARY_DIR ${PROJECT_SOURCE_DIR}/lib)
++        set(sip_LIBRARY_DIR ${PROJECT_SOURCE_DIR}/${CATKIN_PACKAGE_LIB_DESTINATION})
+     endif()
+     if(NOT sip_BINARY_DIR)
+         set(sip_BINARY_DIR ${PROJECT_BINARY_DIR})
+Only in src/python_qt_binding: dist
+Only in src/python_qt_binding/src: python_qt_binding.egg-info
+diff -ru src_unmodded/qt_gui_core/qt_gui_cpp/CMakeLists.txt src/qt_gui_core/qt_gui_cpp/CMakeLists.txt
+--- src_unmodded/qt_gui_core/qt_gui_cpp/CMakeLists.txt	2018-03-21 16:37:27.000000000 +0100
++++ src/qt_gui_core/qt_gui_cpp/CMakeLists.txt	2018-07-20 23:55:49.025892418 +0200
+@@ -1,6 +1,10 @@
+ cmake_minimum_required(VERSION 2.8.3)
+ project(qt_gui_cpp)
+ 
++if(NOT WIN32)
++  set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++0x")
++endif()
++
+ find_package(catkin REQUIRED COMPONENTS cmake_modules pluginlib)
+ find_package(Boost REQUIRED COMPONENTS filesystem system)
+ find_package(TinyXML REQUIRED)
+diff -ru src_unmodded/qt_gui_core/qt_gui_cpp/src/qt_gui_cpp_sip/CMakeLists.txt src/qt_gui_core/qt_gui_cpp/src/qt_gui_cpp_sip/CMakeLists.txt
+--- src_unmodded/qt_gui_core/qt_gui_cpp/src/qt_gui_cpp_sip/CMakeLists.txt	2018-03-21 16:37:27.000000000 +0100
++++ src/qt_gui_core/qt_gui_cpp/src/qt_gui_cpp_sip/CMakeLists.txt	2018-07-21 00:13:05.070861598 +0200
+@@ -29,8 +29,8 @@
+ # maintain context for different named target
+ set(qt_gui_cpp_sip_INCLUDE_DIRS ${qt_gui_cpp_INCLUDE_DIRS} "${CMAKE_CURRENT_SOURCE_DIR}/../../include" ${catkin_INCLUDE_DIRS})
+ set(qt_gui_cpp_sip_LIBRARIES ${qt_gui_cpp_LIBRARIES} ${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+-set(qt_gui_cpp_sip_LIBRARY_DIRS ${qt_gui_cpp_LIBRARY_DIRS} ${CATKIN_DEVEL_PREFIX}/lib)
+-set(qt_gui_cpp_sip_LDFLAGS_OTHER ${qt_gui_cpp_LDFLAGS_OTHER} -Wl,-rpath,\\"${CATKIN_DEVEL_PREFIX}/lib\\")
++set(qt_gui_cpp_sip_LIBRARY_DIRS ${qt_gui_cpp_LIBRARY_DIRS} ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION})
++set(qt_gui_cpp_sip_LDFLAGS_OTHER ${qt_gui_cpp_LDFLAGS_OTHER} -Wl,-rpath,\\"${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}\\")
+ 
+ find_package(python_qt_binding REQUIRED)
+ include(${python_qt_binding_EXTRAS_DIR}/sip_helper.cmake)
+diff -ru src_unmodded/robot_state_publisher/CMakeLists.txt src/robot_state_publisher/CMakeLists.txt
+--- src_unmodded/robot_state_publisher/CMakeLists.txt	2018-04-05 22:32:20.000000000 +0200
++++ src/robot_state_publisher/CMakeLists.txt	2018-07-21 00:39:49.561813869 +0200
+@@ -7,7 +7,11 @@
+ find_package(catkin REQUIRED
+   COMPONENTS roscpp rosconsole rostime tf tf2_ros tf2_kdl kdl_parser
+ )
+-find_package(Eigen3 REQUIRED)
++#find_package(Eigen3 REQUIRED)
++find_package( PkgConfig )
++pkg_check_modules( EIGEN3 REQUIRED eigen3 )
++include_directories( ${EIGEN3_INCLUDE_DIRS} )
++
+ 
+ find_package(urdfdom_headers REQUIRED)
+ 
+diff -ru src_unmodded/ros/rosbuild/core/rosbuild/public.cmake src/ros/rosbuild/core/rosbuild/public.cmake
+--- src_unmodded/ros/rosbuild/core/rosbuild/public.cmake	2018-05-01 21:35:43.000000000 +0200
++++ src/ros/rosbuild/core/rosbuild/public.cmake	2018-07-21 00:22:52.564844122 +0200
+@@ -194,7 +194,7 @@
+ 
+   # Set default output directories
+   set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
+-  set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
++  set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/${CATKIN_PACKAGE_LIB_DESTINATION})
+ 
+   # By default, look in the local include dir
+   include_directories(${PROJECT_SOURCE_DIR}/include)
+diff -ru src_unmodded/ros/roscreate/templates/CMakeLists.tmpl src/ros/roscreate/templates/CMakeLists.tmpl
+--- src_unmodded/ros/roscreate/templates/CMakeLists.tmpl	2018-05-01 21:35:49.000000000 +0200
++++ src/ros/roscreate/templates/CMakeLists.tmpl	2018-07-21 00:21:31.051846547 +0200
+@@ -14,7 +14,7 @@
+ #set the default path for built executables to the "bin" directory
+ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+ #set the default path for built libraries to the "lib" directory
+-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
++set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/${CATKIN_PACKAGE_LIB_DESTINATION})
+ 
+ #uncomment if you have defined messages
+ #rosbuild_genmsg()
+diff -ru src_unmodded/ros/roscreate/test/fake-pkg/stack2/depends_stack1/CMakeLists.txt src/ros/roscreate/test/fake-pkg/stack2/depends_stack1/CMakeLists.txt
+--- src_unmodded/ros/roscreate/test/fake-pkg/stack2/depends_stack1/CMakeLists.txt	2018-05-01 21:35:49.000000000 +0200
++++ src/ros/roscreate/test/fake-pkg/stack2/depends_stack1/CMakeLists.txt	2018-07-21 00:23:26.888843101 +0200
+@@ -14,7 +14,7 @@
+ #set the default path for built executables to the "bin" directory
+ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+ #set the default path for built libraries to the "lib" directory
+-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
++set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/${CATKIN_PACKAGE_LIB_DESTINATION})
+ 
+ #uncomment if you have defined messages
+ #rosbuild_genmsg()
+diff -ru src_unmodded/ros_comm/rosbag/CMakeLists.txt src/ros_comm/rosbag/CMakeLists.txt
+--- src_unmodded/ros_comm/rosbag/CMakeLists.txt	2018-06-06 18:25:25.000000000 +0200
++++ src/ros_comm/rosbag/CMakeLists.txt	2018-07-20 23:49:00.534904569 +0200
+@@ -2,7 +2,7 @@
+ project(rosbag)
+ 
+ if(NOT WIN32)
+-  set_directory_properties(PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra")
++  set_directory_properties(PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra;-std=c++0x")
+ endif()
+ 
+ find_package(catkin REQUIRED COMPONENTS rosbag_storage rosconsole roscpp std_srvs topic_tools xmlrpcpp)
+diff -ru src_unmodded/ros_comm/rosbag_storage/CMakeLists.txt src/ros_comm/rosbag_storage/CMakeLists.txt
+--- src_unmodded/ros_comm/rosbag_storage/CMakeLists.txt	2018-06-06 18:25:29.000000000 +0200
++++ src/ros_comm/rosbag_storage/CMakeLists.txt	2018-07-20 23:49:00.534904569 +0200
+@@ -3,7 +3,7 @@
+ project(rosbag_storage)
+ 
+ if(NOT WIN32)
+-  set_directory_properties(PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra")
++  set_directory_properties(PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra;-std=c++0x")
+ endif()
+ 
+ find_package(console_bridge REQUIRED)
+diff -ru src_unmodded/rqt/rqt_gui_cpp/CMakeLists.txt src/rqt/rqt_gui_cpp/CMakeLists.txt
+--- src_unmodded/rqt/rqt_gui_cpp/CMakeLists.txt	2018-03-21 17:02:40.000000000 +0100
++++ src/rqt/rqt_gui_cpp/CMakeLists.txt	2018-07-21 00:58:30.508780524 +0200
+@@ -1,5 +1,8 @@
+ cmake_minimum_required(VERSION 2.8.3)
+ project(rqt_gui_cpp)
++
++set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++0x")
++
+ # Load catkin and all dependencies required for this package
+ find_package(catkin REQUIRED COMPONENTS qt_gui qt_gui_cpp roscpp nodelet)
+ catkin_package(
+diff -ru src_unmodded/rqt_image_view/CMakeLists.txt src/rqt_image_view/CMakeLists.txt
+--- src_unmodded/rqt_image_view/CMakeLists.txt	2018-05-03 00:27:53.000000000 +0200
++++ src/rqt_image_view/CMakeLists.txt	2018-07-21 01:12:08.658756186 +0200
+@@ -1,5 +1,7 @@
+ cmake_minimum_required(VERSION 2.8.3)
+ 
++set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++0x")
++
+ project(rqt_image_view)
+ # Load catkin and all dependencies required for this package
+ find_package(catkin REQUIRED COMPONENTS rqt_gui rqt_gui_cpp image_transport sensor_msgs geometry_msgs cv_bridge)
+diff -ru src_unmodded/rqt_rviz/CMakeLists.txt src/rqt_rviz/CMakeLists.txt
+--- src_unmodded/rqt_rviz/CMakeLists.txt	2018-06-28 05:37:16.000000000 +0200
++++ src/rqt_rviz/CMakeLists.txt	2018-07-21 01:43:15.447700654 +0200
+@@ -2,6 +2,8 @@
+ project(rqt_rviz)
+ # Load catkin and all dependencies required for this package
+ 
++set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++0x")
++
+ find_package(Boost REQUIRED COMPONENTS program_options)
+ include_directories(${Boost_INCLUDE_DIRS})
+ link_directories(${Boost_LIBRARY_DIRS})
+diff -ru src_unmodded/visualization_tutorials/interactive_marker_tutorials/CMakeLists.txt src/visualization_tutorials/interactive_marker_tutorials/CMakeLists.txt
+--- src_unmodded/visualization_tutorials/interactive_marker_tutorials/CMakeLists.txt	2018-05-10 02:39:55.000000000 +0200
++++ src/visualization_tutorials/interactive_marker_tutorials/CMakeLists.txt	2018-07-21 01:19:09.708743661 +0200
+@@ -1,6 +1,8 @@
+ cmake_minimum_required(VERSION 2.8.3)
+ project(interactive_marker_tutorials)
+ 
++set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++0x")
++
+ find_package(catkin REQUIRED COMPONENTS interactive_markers roscpp visualization_msgs tf)
+ 
+ ###################################
+diff -ru src_unmodded/visualization_tutorials/librviz_tutorial/CMakeLists.txt src/visualization_tutorials/librviz_tutorial/CMakeLists.txt
+--- src_unmodded/visualization_tutorials/librviz_tutorial/CMakeLists.txt	2018-05-10 02:39:48.000000000 +0200
++++ src/visualization_tutorials/librviz_tutorial/CMakeLists.txt	2018-07-21 01:42:27.249702087 +0200
+@@ -5,6 +5,9 @@
+ ## First start with some standard catkin stuff.
+ cmake_minimum_required(VERSION 2.8.3)
+ project(librviz_tutorial)
++
++set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++0x")
++
+ find_package(catkin REQUIRED COMPONENTS rviz roscpp)
+ catkin_package()
+ include_directories(${catkin_INCLUDE_DIRS})
+diff -ru src_unmodded/visualization_tutorials/rviz_plugin_tutorials/CMakeLists.txt src/visualization_tutorials/rviz_plugin_tutorials/CMakeLists.txt
+--- src_unmodded/visualization_tutorials/rviz_plugin_tutorials/CMakeLists.txt	2018-05-10 02:40:08.000000000 +0200
++++ src/visualization_tutorials/rviz_plugin_tutorials/CMakeLists.txt	2018-07-21 01:44:23.059698642 +0200
+@@ -5,6 +5,9 @@
+ ## First start with some standard catkin stuff.
+ cmake_minimum_required(VERSION 2.8.3)
+ project(rviz_plugin_tutorials)
++
++set_directory_properties(PROPERTIES COMPILE_OPTIONS "-std=c++0x")
++
+ find_package(catkin REQUIRED COMPONENTS rviz)
+ catkin_package()
+ include_directories(${catkin_INCLUDE_DIRS})

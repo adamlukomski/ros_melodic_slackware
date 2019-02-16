@@ -1,0 +1,6 @@
+python-catkin_pkg
+
+Standalone Python library for the catkin build system.
+
+Catkin is a collection of cmake macros and associated python code
+used to build some parts of ROS.

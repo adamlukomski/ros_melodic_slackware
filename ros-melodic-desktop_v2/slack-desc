@@ -1,0 +1,22 @@
+# HOW TO EDIT THIS FILE:
+# The "handy ruler" below makes it easier to edit a package description.
+# Line up the first '|' above the ':' following the base package name, and
+# the '|' on the right side marks the last column you can put a character in.
+# You must make exactly 11 lines for the formatting to be correct.  It's also
+# customary to leave one space after the ':' except on otherwise blank lines.
+
+                   |-----handy-ruler------------------------------------------------------|
+ros-melodic-desktop: ros-melodic-desktop (Robot Operating System)
+ros-melodic-desktop:
+ros-melodic-desktop: The Robot Operating System (ROS) is a flexible framework
+ros-melodic-desktop: for writing robot software. It is a collection of tools,
+ros-melodic-desktop: libraries, and conventions that aim to simplify the task
+ros-melodic-desktop: of creating complex and robust robot behavior across
+ros-melodic-desktop: a wide variety of robotic platforms.
+ros-melodic-desktop:
+ros-melodic-desktop: This is a script that will download a specific version
+ros-melodic-desktop: of the ROS Melodic Desktop framework, apply Slackware-specific
+ros-melodic-desktop: patches and create a single package.
+ros-melodic-desktop:
+ros-melodic-desktop: This package is HIGHLY EXPERIMENTAL
+ros-melodic-desktop:

@@ -1,0 +1,20 @@
+# HOW TO EDIT THIS FILE:
+# The "handy ruler" below makes it easier to edit a package description.
+# Line up the first '|' above the ':' following the base package name, and
+# the '|' on the right side marks the last column you can put a character in.
+# You must make exactly 11 lines for the formatting to be correct.  It's also
+# customary to leave one space after the ':' except on otherwise blank lines.
+
+             |-----handy-ruler------------------------------------------------------|
+python-rosdep: python-rosdep (dependency management)
+python-rosdep:
+python-rosdep: rosdep is a command-line tool for installing system dependencies.
+python-rosdep: For end-users, rosdep helps you install system dependencies for
+python-rosdep: software that you are building from source. For developers, rosdep
+python-rosdep: simplifies the problem of installing system dependencies on different
+python-rosdep: platforms.
+python-rosdep:
+python-rosdep: https://github.com/ros-infrastructure/rosdep
+python-rosdep:
+python-rosdep:
+
